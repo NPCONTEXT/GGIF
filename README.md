@@ -1,23 +1,38 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/ggif-lockup-dark.svg">
+  <img alt="GGIF 公众号 GIF 压缩" src="docs/logo/ggif-lockup-light.svg" height="76">
+</picture>
+
 # GGIF
 
 给微信公众号用的 GIF 压缩工具：把 GIF 或视频拖进去，出来的就是能直接发公众号的动图。Mac 和 Windows 都有。
 
 <p>
-  <img src="docs/img/panel-mac.png" alt="Mac 菜单栏里的 GGIF 面板" width="300">
-  <img src="docs/img/panel-win.png" alt="Windows 托盘里的 GGIF 面板" width="300">
+  <img src="docs/截图/面板-mac.jpg" alt="Mac 菜单栏里的 GGIF 面板" width="300">
+  <img src="docs/截图/面板-win.jpg" alt="Windows 托盘里的 GGIF 面板" width="300">
 </p>
 
 <sub>左：Mac 菜单栏里的面板；右：Windows 托盘里的面板。每个文件可以同时出 9.9MB 和 4.8MB 两个版本，压好直接从列表拖进公众号正文。</sub>
 
-## 它解决什么
+公众号对动图有一串规矩：单张 10MB 以内、最多 300 帧、粘贴进去的还得更小、帧数太少会被平台重新压一遍（见下面「公众号的规矩」）。每张图自己试参数很费时间。GGIF 把这些规矩做成了预设，拖进去就行。
 
-公众号对动图有一串规矩：单张 10MB 以内、最多 300 帧、粘贴进去的还得更小、帧数太少会被平台重新压一遍（见下面「公众号的规矩」）。每张图自己试参数很费时间。GGIF 把这些规矩做成了预设：
+## 四张图看懂
 
-- **现成的 GIF、视频**：拖到 GGIF 的图标上就压，不用调参数。Mac 上把 GIF 的打开方式设成 GGIF 以后，双击就压，结果放在原文件旁边；本来就合格的不会重复压。
-- **要自己录屏**（Mac）：一次录完。录的时候看到该分开的地方按一下切一刀，停下后按刀切成几段，每段自动压成一张。
-- **想自己细调**：完整界面里能剪一段、裁画面，改宽度、帧率、画质，改完马上看到预计多大。
+![公众号动图，拖进去就能发](docs/漫画/01-GGIF是什么.jpg)
+![三种用法，挑顺手的](docs/漫画/02-三种用法.jpg)
+![公众号的规矩，GGIF 替你记着](docs/漫画/03-公众号的规矩.jpg)
+![两个档，怎么发进公众号](docs/漫画/04-怎么发进公众号.jpg)
 
-两个档：**9.9MB** 的用来在图片库上传、或者直接拖进正文；**4.8MB** 的用来复制粘贴。三种速度：默认「极速」，日常素材一般几秒一张；「标准」「极限」更慢，画质更好。
+<sub>四张图由 Codex（ChatGPT）的生图工具生成，人设和 <a href="https://github.com/NPCONTEXT/Qlimen">Qlimen</a>、<a href="https://github.com/NPCONTEXT/Qlimen-Tabula">无限表格</a>的图是同一套。拼成一张的长图在 <a href="docs/漫画/GGIF-一图流.jpg">docs/漫画/GGIF-一图流.jpg</a>。</sub>
+
+---
+
+## 30 秒看懂
+
+1. **现成的 GIF、视频**：拖到 GGIF 的图标上就压，不用调参数。Mac 上把 GIF 的打开方式设成 GGIF 以后，双击就压，结果放在原文件旁边；本来就合格的不会重复压。
+2. **要自己录屏**（Mac）：一次录完。录的时候看到该分开的地方按一下切一刀，停下后按刀切成几段，每段自动压成一张。
+3. **想自己细调**：完整界面里能剪一段、裁画面，改宽度、帧率、画质，改完马上看到预计多大。
+4. **两个档**：**9.9MB** 的用来在图片库上传、或者直接拖进正文；**4.8MB** 的用来复制粘贴。**三种速度**：默认「极速」，日常素材一般几秒一张；「标准」「极限」更慢，画质更好。
 
 ## 名字
 
@@ -58,6 +73,8 @@ xattr -dr com.apple.quarantine /Applications/GGIF.app
 如果只有「不运行」、没有「仍要运行」，或者提示被「智能应用控制」阻止：那是 Windows 11 拦下了没签名的程序，GGIF 这边目前没有办法。
 
 ## 怎么用
+
+下面是简版；带截图的完整说明见 [docs/使用说明.md](docs/使用说明.md)。
 
 **压现成的 GIF 和视频**
 
@@ -136,6 +153,7 @@ cd ../app && GIFKIT_NO_PRIVATE_SAMPLES=1 node --test 'test/*.test.js'
 - `app/`：界面和主进程（Electron）。
 - `engine/`：压缩引擎，纯 Node，调用外部的编码程序。用法见 `engine/README.md`。
 - `.github/workflows/`：Windows 版的云端测试和打包。
+- `docs/`：使用说明、截图、四张漫画和标志。
 - `third_party/`：随包程序的许可证。
 
 ## 关于代码里的注释
@@ -144,4 +162,6 @@ cd ../app && GIFKIT_NO_PRIVATE_SAMPLES=1 node --test 'test/*.test.js'
 
 ## 许可证
 
-GGIF 自己的代码按 [MIT](LICENSE) 发布。安装包里带的 ffmpeg、gifsicle、gifski 等程序各有各的许可证，见[第三方声明](THIRD_PARTY_NOTICES.md)。GGIF 的标志不随 MIT 授权，介绍、链接本项目时可以用。
+GGIF 自己的代码按 [MIT](LICENSE) 发布。安装包里带的 ffmpeg、gifsicle、gifski 等程序各有各的许可证，见[第三方声明](THIRD_PARTY_NOTICES.md)。GGIF 的标志（`docs/logo/` 里的图形和字标）不随 MIT 授权，介绍、链接本项目时可以用。标志的字体是 Outfit 和思源黑体（都是 SIL OFL 1.1），SVG 里的字已转成曲线。四张漫画由 Codex（ChatGPT）的生图工具生成；截图里的示例画面取自这四张漫画。
+
+更新记录见 [更新日志](更新日志.md)。
