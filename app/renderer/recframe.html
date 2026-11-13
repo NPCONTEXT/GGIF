@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+<title>录屏区域</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="rec.css">
+</head>
+<!-- 录制框（作者定：「四个框做成一体化，采用黑色边框+底部4px黑框+2px浅青色进度条」）：
+     窗口比录制区域大一圈，框画在区域外面；底边是固定 90 秒的进度。鼠标穿透、开了内容保护，不会被录进去。 -->
+<body class="frame">
+<div class="fbox"></div>
+<i class="fcorner nw"></i><i class="fcorner ne"></i><i class="fcorner sw"></i><i class="fcorner se"></i>
+<div class="fbar">
+  <div id="fill" class="ffill"></div>
+  <div id="cuts"></div>
+  <div id="head" class="fhead hidden"></div>
+</div>
+<script src="recframe.js"></script>
+</body>
+</html>

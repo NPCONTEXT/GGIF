@@ -1,0 +1,101 @@
+/* 共用的设计变量（10-22 界面重做，参考应用宝；作者在原型里调好发来的数值：
+   {"L":13,"D":7,"T":88,"H":242,"S":13,"LN":11,"tintk":0,"blur":60,"ambb":20,"sha":40,"rk":1,"mk":2.5,"accent":"#4b8bff","blue":"#4b8bff","green":"#38cc8a"}，动效选「按 2.5 倍」）。
+   主界面、菜单栏面板、录屏浮层都先加载这一份；原型在 GIF工具/界面与打包/重设计/我的版/原型.html。 */
+:root {
+  /* 中深灰带一点蓝：背景 13%，卡片一级比一级亮（L + 0.6D / D / 1.7D / 2.4D） */
+  --bg: hsl(242 13% 13%);
+  --bg2: hsl(242 13% 17.2%);
+  --card: hsl(242 13% 20%);
+  --card2: hsl(242 13% 24.9%);
+  --card3: hsl(242 13% 29.8%);
+  --line: rgba(255, 255, 255, 0.11);
+  --line2: rgba(255, 255, 255, 0.22);
+  --t1: hsl(242 6% 88%);
+  --t2: hsl(242 6% 63.4%);
+  --t3: hsl(242 5% 45.8%);
+  --accent: #4b8bff;
+  --accent-hi: color-mix(in srgb, var(--accent) 78%, white);
+  --accent-bg: color-mix(in srgb, var(--accent) 17%, transparent);
+  --blue: #4b8bff; /* 9.9MB 档 */
+  --green: #38cc8a; /* 4.8MB 档 */
+  --ok: #38cc8a;
+  --warn: #ffb44a;
+  --bad: #ff6158;
+  --cyan: #7fe9f2; /* 录制框底边的浅青：进度、播放头的光 */
+  --blur: 60px; /* 预览上下留白的虚化 */
+  --ambb: 0.2; /* 虚化的亮度 */
+  --sha: 0.4; /* 阴影深浅 */
+  --rk: 1; /* 圆角倍数 */
+  --mk: 2.5; /* 动效快慢倍数（越大越慢） */
+  --r-xl: calc(22px * var(--rk));
+  --r-l: calc(16px * var(--rk));
+  --r-m: calc(12px * var(--rk));
+  --r-s: calc(8px * var(--rk));
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fast: calc(0.16s * var(--mk));
+  --mid: calc(0.24s * var(--mk));
+  --slow: calc(0.32s * var(--mk));
+  --shadow: 0 14px 36px rgba(0, 0, 0, var(--sha));
+  color-scheme: dark;
+}
+/* 系统开了「减少动态效果」就不放动画 */
+@media (prefers-reduced-motion: reduce) { :root { --mk: 0.01; } }
+
+/* 滚动条：细的深色款（默认的浅灰在深色底上太扎眼） */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.28); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------- 共用的小件 ---------- */
+.num { font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.upload, .dot.blue { background: var(--blue); }
+.dot.paste, .dot.green { background: var(--green); }
+.kc { display: inline-block; padding: 0 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); color: var(--t1); font-size: 11.5px; line-height: 18px; white-space: nowrap; }
+.spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.18); border-top-color: var(--cyan); animation: spin 0.8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* 圆形图标按钮：只露图标，名字放悬停提示里（收进去） */
+.ibtn { position: relative; width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; padding: 0; color: var(--t2); border: 1px solid var(--line2); background: rgba(255, 255, 255, 0.03); cursor: pointer;
+  transition: background var(--fast), color var(--fast), border-color var(--fast), transform var(--fast) var(--ease), opacity var(--fast); }
+.ibtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: var(--t1); border-color: rgba(255, 255, 255, 0.3); transform: scale(1.06); }
+.ibtn:active:not(:disabled) { transform: scale(0.96); }
+.ibtn:disabled { opacity: 0.35; cursor: default; }
+.ibtn svg { width: 17px; height: 17px; display: block; }
+.ibtn.sm { width: 28px; height: 28px; } .ibtn.sm svg { width: 14px; height: 14px; }
+.ibtn.xs { width: 26px; height: 26px; border-color: transparent; background: rgba(255, 255, 255, 0.07); } .ibtn.xs svg { width: 14px; height: 14px; }
+.ibtn.rec svg .core { fill: var(--bad); }
+[data-tip]::after { content: attr(data-tip); position: absolute; left: 50%; top: calc(100% + 8px); transform: translate(-50%, -4px); padding: 5px 10px; border-radius: 8px; background: var(--card3); color: var(--t1); font-size: 12px; font-weight: 400; line-height: 1.4; white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); opacity: 0; pointer-events: none; transition: opacity var(--fast), transform var(--fast) var(--ease); z-index: 50; }
+[data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); }
+[data-tip].tip-up::after { top: auto; bottom: calc(100% + 8px); transform: translate(-50%, 4px); }
+[data-tip].tip-up:hover::after { transform: translate(-50%, 0); }
+[data-tip].tip-left::after { left: auto; right: 0; transform: translate(0, -4px); }
+[data-tip].tip-left:hover::after { transform: none; }
+[data-tip].tip-up.tip-left::after { transform: translate(0, 4px); }
+[data-tip].tip-right::after { left: 0; transform: translate(0, -4px); }
+[data-tip].tip-right:hover::after { transform: none; }
+/* 胶囊按钮 */
+.pill { height: 32px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--card2); color: var(--t1); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast), opacity var(--fast); }
+.pill:hover:not(:disabled) { background: var(--card3); transform: translateY(-1px); }
+.pill:disabled { opacity: 0.4; cursor: default; }
+.pill.primary { background: var(--accent); color: #fff; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.pill.primary:hover:not(:disabled) { background: var(--accent-hi); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 50%, transparent); }
+.pill.sm { height: 26px; padding: 0 12px; font-size: 12px; }
+.pill.ghost { background: transparent; border: 1px solid var(--line2); }
+.pill.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+/* 开关（复选框做成拨片） */
+.toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--t2); font-size: 12px; cursor: pointer; white-space: nowrap; position: relative; }
+.toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle i { width: 28px; height: 16px; border-radius: 999px; background: var(--card3); position: relative; flex: none; transition: background var(--fast); }
+.toggle i::before { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #d8d8de; transition: transform var(--mid) var(--ease), background var(--fast); }
+.toggle input:checked + i { background: var(--accent); }
+.toggle input:checked + i::before { transform: translateX(12px); background: #fff; }
+.toggle input:focus-visible + i { box-shadow: 0 0 0 3px var(--accent-bg); }
+/* logo（作者选 V0，就是原来的占位：圆角框 + 底边一整条浅青，和录制框底边、打标条同一套语言；
+   出图脚本 GIF工具/脚本/出图标.mjs，几版对比 GIF工具/界面与打包/重设计/logo/精修方向.png）。大小在各页面自己的样式里定 */
+.logoMark { display: block; flex: none; color: var(--t1); }
+.logoMark .lm-frame { fill: none; stroke: currentColor; stroke-width: 2.4; }
+.logoMark .lm-bar { fill: var(--cyan); }

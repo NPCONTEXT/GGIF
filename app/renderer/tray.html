@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'">
+<title>GGIF</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="tray.css">
+</head>
+<body>
+<!-- 10-22 界面重做（参考应用宝，作者选了 Claude 版原型）。id 和原来一样。 -->
+<header>
+  <svg class="logoMark" viewBox="0 0 24 24" aria-hidden="true"><rect class="lm-frame" x="1.2" y="1.2" width="21.6" height="21.6" rx="6"/><rect class="lm-bar" x="6" y="15.4" width="12" height="2.6" rx="1.3"/></svg><b>GGIF</b>
+  <span class="grow"></span>
+  <!-- 11.12（作者选 A）：原来「两种都要」的位置放「打标」；档位做成装水的胶囊，两个档各自点亮，两个都亮 = 两种都要 -->
+  <label class="toggle mark" data-tip="录屏打标：开着，录的时候按 ⌥空格 切段（一刀没切就整段一份）；关着，整段录成一份，录完在主界面挑一段压。和录屏小胶囊、设置里是同一个"><input type="checkbox" id="recMark"><i></i>打标</label>
+  <!-- Windows版 W11a（作者：「看看怎么固定浮窗」）：Windows 上打标不显示，这个位置放「固定」；Mac 上藏着 -->
+  <label class="toggle pin winOnly" data-tip="固定：开着时点别的窗口，面板也不收起，方便把压好的拖进文章；关着照旧，点别处就收"><input type="checkbox" id="panelPin"><i></i>固定</label>
+  <div id="presets" class="seg water"></div>
+</header>
+<!-- 投放区做成「嘴」：平时一条线、两头向下的小三角（闭着）；拖拽时张开成投放区（作者的设计） -->
+<div id="mouth" class="mouth" title="把 GIF 或视频拖到这里"><div class="lip"></div><div class="dropzone"><b>松手开始压缩</b><span>GIF 或视频，可以一次拖多个或整个文件夹</span></div></div>
+<div id="toast" class="toast"></div>
+<!-- 刚录完：这次的片段在哪、还有几段待压缩、「全部压缩」（录屏卷 3.1b） -->
+<div id="recSession" class="recSession hidden"><span id="recText" class="recText"></span><button id="recAll" class="pill sm primary">全部压缩</button><button id="recOpen" class="ibtn xs" data-tip="打开文件夹"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3l1.5 1.5h6.5A1.5 1.5 0 0 1 17 8v6.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"/></svg></button><button id="recClose" class="ibtn xs tip-left" data-tip="收起这条"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg></button></div>
+<div id="list"></div>
+<div id="empty" class="empty">
+  <div class="emptyIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11m0 0-4.2-4.2M12 14.5l4.2-4.2"/><path d="M4 15v2.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V15"/></svg></div>
+  <p>把 GIF 或视频（多个、整个文件夹都行）拖到菜单栏图标上，<br>停一下等面板展开，再拖进来松手</p>
+  <p class="muted">也可以复制 GIF 后在这里按 ⌘V<br>压好的版本可以直接拖进公众号</p>
+</div>
+<!-- 双击的小条（像下载列表）：只列这次双击的几张；这一栏只在小条里显示（作者） -->
+<div id="cbar" class="cbar"><span id="cmore" class="muted"></span><span class="grow"></span><button id="cAll" class="pill sm" title="看完整的图片列表">全部</button><button id="cClose" class="pill sm ghost" title="收起小条">收起</button></div>
+<!-- 底栏：常用的在左，清空、退出在右、中间一道竖线隔开；名字都在悬停提示里 -->
+<footer>
+  <button id="recBtn" class="ibtn rec tip-up tip-right" data-tip="录屏：选屏幕或窗口，框出来后拖边角改大小，⌃⌥R 开始 / 停止，开了「打标」时录的时候 ⌥空格 切一刀；最长 90 秒；也可以双击菜单栏图标"><svg viewBox="0 0 20 20"><circle class="core" cx="10" cy="10" r="5.2"/><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+  <button id="openMain" class="ibtn tip-up" data-tip="完整界面"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="14" height="12" rx="2.5"/><path d="M3 7.5h14"/></svg></button>
+  <span class="fhint">拖进来就压 · ⌘V 粘贴</span>
+  <span class="grow"></span>
+  <button id="clear" class="ibtn tip-up tip-left" data-tip="清空列表（10 秒内能撤销，文件都不动）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h8M4 10h6M4 14h5"/><path d="M13 12l4 4m0-4-4 4"/></svg></button>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="quit" class="ibtn tip-up tip-left" data-tip="退出 GGIF"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3v6"/><path d="M6 5.6a6 6 0 1 0 8 0"/></svg></button>
+</footer>
+<script src="tray.js"></script>
+</body>
+</html>

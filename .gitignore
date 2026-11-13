@@ -1,0 +1,8 @@
+node_modules/
+*.rgba
+dist/
+out/
+.DS_Store
+app/native/bin/
+engine/vendor/
+app/dist-win/

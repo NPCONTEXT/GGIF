@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+<title>录屏</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="rec.css">
+</head>
+<!-- 10-22 重做：样子照原型，主按钮「开始录制」挪到最右。录制框右上角外面的小胶囊（作者选「右上角小胶囊（推荐）」）：开录前是提示和按钮，录的时候是时间、第几段、怎么切、停止。
+     不抢焦点、不进画面。 -->
+<body class="cap">
+<div class="capbox">
+  <span id="grip" class="grip hidden" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><!-- 10-22 试用反馈：准备好时按住胶囊空白处拖，框跟着走 -->
+  <span id="dot" class="dot"></span>
+  <span id="time" class="time hidden"></span>
+  <span id="info" class="info"></span>
+  <label id="markBox" class="auto hidden" title="录屏打标：开着，录的时候按 ⌥空格 切段（一刀没切就整段一份）；关着，整段录成一份，录完在主界面挑一段压"><input type="checkbox" id="mark"> 打标</label>
+  <label id="autoBox" class="auto hidden" title="停录后把这次的各段全部按菜单栏当前档位压缩"><input type="checkbox" id="auto"> 录完自动压</label>
+  <span id="fpsBox" class="fpsBox hidden" title="录制帧率：高保真＝录 60 帧，导出时自动选帧率（和以前一样）；选数字＝按这个帧率录、导出也锁在这个帧率，录的时候更省电、录像更小。一张 GIF 最多 300 帧：30 帧最长 10 秒（长了会自动变窄，10 秒约 600 宽）、15 帧 20 秒、10 帧 30 秒、5 帧 60 秒。记住上次选的；和设置里的是同一个"><span class="flab">帧率</span><span id="fseg" class="fseg"><button data-f="60">高保真</button><button data-f="30">30</button><button data-f="15">15</button><button data-f="10">10</button><button data-f="5">5</button></span></span><!-- 11.13 录制帧率，示意图 A -->
+  <button id="bRegion" class="ghost hidden">改区域</button>
+  <button id="bCancel" class="ghost hidden">取消</button>
+  <button id="bStart" class="primary hidden">开始录制</button>
+  <button id="bStop" class="stopBtn hidden" title="停止（⌃⌥R）"><i></i></button>
+</div>
+<script src="recbar.js"></script>
+</body>
+</html>

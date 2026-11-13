@@ -1,0 +1,63 @@
+{
+  "appId": "local.gifkit.app",
+  "productName": "GGIF",
+  "copyright": "NPCONTEXT",
+  "asar": false,
+  "directories": {
+    "output": "dist-win"
+  },
+  "files": [
+    "**/*",
+    "!test/**",
+    "!scripts/**",
+    "!native/**",
+    "!dist-win/**",
+    "!electron-builder.win.json"
+  ],
+  "extraResources": [
+    {
+      "from": "../engine",
+      "to": "engine",
+      "filter": [
+        "package.json",
+        "src/**",
+        "vendor/**"
+      ]
+    },
+    {
+      "from": "native/bin/ggif-helper.exe",
+      "to": "ggif-helper.exe"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "zip",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "assets/icon-1024.png",
+    "artifactName": "GGIF-${version}-win-x64.${ext}"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "artifactName": "GGIF-${version}-Setup.${ext}",
+    "shortcutName": "GGIF",
+    "createDesktopShortcut": true,
+    "deleteAppDataOnUninstall": false
+  },
+  "publish": null,
+  "extraMetadata": {
+    "name": "ggif",
+    "productName": "GGIF"
+  }
+}

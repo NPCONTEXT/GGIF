@@ -1,0 +1,16 @@
+{
+  "name": "gifkit-app",
+  "version": "0.6.0",
+  "description": "GGIF（原名 GIF 工具）的桌面界面（Electron），调用 ../engine 里的引擎。",
+  "private": true,
+  "license": "MIT",
+  "author": "NPCONTEXT",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.9.0"
+  }
+}

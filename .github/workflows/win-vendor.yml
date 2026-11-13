@@ -1,0 +1,101 @@
+name: Windows 编码器
+# 手动跑一次就行：取 BtbN 的 ffmpeg 9.0 固定版（按 BtbN 发布里的 checksums.sha256 核对）、
+# 用和 Mac 版同一份 gifsicle 1.97 源码拿 MSVC 编、加上本机传进发布 deps-win-1 的 gifski.exe 和 lessgif.wasm，
+# 打成 win-vendor.zip（解开就是 engine/vendor/ 的样子）和清单放回 deps-win-1。之后的构建都从这里取，不再下 BtbN。
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FF_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-07-12-47/ffmpeg-n9.0.2-48-gd4070a14ce-win64-gpl-9.0.zip
+      FF_SHA256: b33f1e3383f97c7acc8502e475df2faabcaee7d9605facda9b213cfbb39e0300
+      GIFSICLE_SHA256: 17d98f305372e8c6c47c3fa7c75a9ebd9a8dea0b47c739d0b3be6c30a1c1da7a
+    steps:
+      - name: 取 ffmpeg 并核对
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest $env:FF_URL -OutFile ffmpeg.zip
+          $h = (Get-FileHash ffmpeg.zip -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne $env:FF_SHA256) { throw "ffmpeg.zip 的 sha256 对不上：$h" }
+          Expand-Archive ffmpeg.zip -DestinationPath ff
+          New-Item -ItemType Directory -Force vendor/licenses | Out-Null
+          $bin = Get-ChildItem ff -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $bin.FullName vendor/
+          Copy-Item (Join-Path $bin.DirectoryName 'ffprobe.exe') vendor/
+          $lic = Get-ChildItem ff -Recurse -Filter LICENSE.txt | Select-Object -First 1
+          Copy-Item $lic.FullName vendor/licenses/ffmpeg-LICENSE.txt
+      - name: 取本机传上来的源码和程序
+        shell: pwsh
+        run: |
+          gh release download deps-win-1 -R $env:GITHUB_REPOSITORY -p gifsicle-1.97.tar.gz -p gifski.exe -p gifski-README.md -p lessgif.wasm -p lessgif-LICENSE-MIT -p lessgif-LICENSE-APACHE
+          $h = (Get-FileHash gifsicle-1.97.tar.gz -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne $env:GIFSICLE_SHA256) { throw "gifsicle 源码的 sha256 对不上：$h" }
+          tar -xzf gifsicle-1.97.tar.gz
+          Copy-Item gifski.exe, lessgif.wasm vendor/
+          Copy-Item gifski-README.md vendor/licenses/gifski-README.md
+          Copy-Item lessgif-LICENSE-MIT vendor/licenses/lessgif-LICENSE-MIT
+          Copy-Item lessgif-LICENSE-APACHE vendor/licenses/lessgif-LICENSE-APACHE
+          Copy-Item gifsicle-1.97/COPYING vendor/licenses/gifsicle-COPYING
+      - name: 写 UTF-8 清单（gifsicle 按系统旧编码读参数，中文路径会变成 ??；嵌上它，Windows 10 1903 起进程就按 UTF-8 读）
+        shell: pwsh
+        run: |
+          @(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+            '<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">',
+            '  <application><windowsSettings>',
+            '    <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>',
+            '  </windowsSettings></application>',
+            '</assembly>'
+          ) | Set-Content -Encoding utf8 gifsicle-1.97/src/utf8.manifest
+      - name: 用 MSVC 编 gifsicle
+        shell: cmd
+        run: |
+          for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSDIR=%%i"
+          call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat" || exit /b 1
+          cd gifsicle-1.97\src || exit /b 1
+          nmake -f Makefile.w32 gifsicle.exe || exit /b 1
+          mt.exe -nologo -manifest utf8.manifest -outputresource:gifsicle.exe;#1 || exit /b 1
+          copy gifsicle.exe ..\..\vendor\ || exit /b 1
+      - name: 查编码器
+        shell: pwsh
+        run: |
+          ./vendor/ffmpeg.exe -hide_banner -version | Select-Object -First 1
+          ./vendor/ffprobe.exe -hide_banner -version | Select-Object -First 1
+          ./vendor/gifsicle.exe --version | Select-Object -First 1
+          ./vendor/gifski.exe --version
+          New-Item -ItemType Directory -Force '中文 测试' | Out-Null
+          ./vendor/ffmpeg.exe -hide_banner -v error -y -f lavfi -i testsrc2=size=64x64:rate=5 -t 1 '中文 测试/动图.gif'
+          ./vendor/gifsicle.exe -O2 '中文 测试/动图.gif' -o '中文 测试/压过.gif'
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path '中文 测试/压过.gif')) { throw 'gifsicle 处理不了中文路径' }
+          'gifsicle 中文路径：能用'
+          $f = ./vendor/ffmpeg.exe -hide_banner -filters 2>&1 | Out-String
+          foreach ($n in 'libvmaf', 'ssim', 'ddagrab', 'gfxcapture') { "滤镜 ${n}：" + $(if ($f -match "\s$n\s") { '有' } else { '没有' }) }
+          $e = ./vendor/ffmpeg.exe -hide_banner -encoders 2>&1 | Out-String
+          foreach ($n in 'libx264', 'h264_mf', 'h264_amf', 'h264_nvenc', 'h264_qsv') { "编码器 ${n}：" + $(if ($e -match "\s$n\s") { '有' } else { '没有' }) }
+          $d = ./vendor/ffmpeg.exe -hide_banner -decoders 2>&1 | Out-String
+          "解码器 libdav1d：" + $(if ($d -match '\slibdav1d\s') { '有' } else { '没有' })
+      - name: 写清单、打包、放进发布
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path vendor).Path
+          $lines = @(
+            "GGIF Windows 随包程序（win-vendor.zip，解开就是 engine/vendor/），$(Get-Date -Format 'yyyy-MM-dd HH:mm') UTC 生成",
+            "ffmpeg、ffprobe：$env:FF_URL",
+            "  zip sha256：$env:FF_SHA256（和 BtbN 发布里的 checksums.sha256 一致）",
+            "gifsicle 1.97：和 Mac 版同一份源码，sha256 $env:GIFSICLE_SHA256，MSVC 编，嵌了 UTF-8 清单（中文路径能用，要 Windows 10 1903 起）（GPL-2.0-only）",
+            "gifski 1.34.0：官方 Windows 版（AGPL-3.0）",
+            "lessgif 0.1.0：wasm（MIT / Apache-2.0）",
+            "",
+            "各文件 sha256："
+          )
+          Get-ChildItem vendor -Recurse -File | ForEach-Object { $lines += '  ' + (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $_.FullName.Substring($root.Length + 1) }
+          $lines | Set-Content -Encoding utf8 win-vendor-manifest.txt
+          Get-Content win-vendor-manifest.txt
+          Compress-Archive -Path vendor/* -DestinationPath win-vendor.zip
+          gh release upload deps-win-1 -R $env:GITHUB_REPOSITORY win-vendor.zip win-vendor-manifest.txt --clobber

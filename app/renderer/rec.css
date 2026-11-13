@@ -1,0 +1,80 @@
+/* 录屏用的三个小窗：拖区域的透明层（region.html）、录制控制条（recbar.html）、区域框（recframe.html）。都开了内容保护，不会被录进去。 */
+html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; font: 13px -apple-system, "PingFang SC", sans-serif; user-select: none; -webkit-user-select: none; -webkit-font-smoothing: antialiased; }
+/* 10-22 重做（参考应用宝，原型同款）：按钮都是胶囊；颜色在 theme.css */
+button { font: inherit; border: 0; border-radius: 999px; padding: 5px 12px; cursor: pointer; background: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 600; transition: background var(--fast), transform var(--fast) var(--ease); }
+button:hover { background: rgba(255, 255, 255, 0.24); }
+button.ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); font-weight: 500; }
+button.ghost:hover { background: rgba(255, 255, 255, 0.1); }
+button.primary { background: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent); }
+button.primary:hover { background: var(--accent-hi); }
+button.stop { background: var(--bad); }
+button.stop:hover { background: color-mix(in srgb, var(--bad) 85%, white); }
+.hidden { display: none !important; }
+
+/* ---------- 拖区域 ---------- */
+body.region { width: 100vw; height: 100vh; cursor: crosshair; }
+.shade { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); }
+.sel { position: fixed; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35); } /* 光标由脚本按位置设（边、角、框里、框外不一样） */
+/* 改大小的把手：四角、四边中点（只是看的，按哪里由脚本按坐标算） */
+.sel .hd { position: absolute; width: 10px; height: 10px; margin: -6px 0 0 -6px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; pointer-events: none; }
+.sel .hd[data-h=nw] { left: 0; top: 0; } .sel .hd[data-h=n] { left: 50%; top: 0; } .sel .hd[data-h=ne] { left: 100%; top: 0; }
+.sel .hd[data-h=e] { left: 100%; top: 50%; } .sel .hd[data-h=se] { left: 100%; top: 100%; } .sel .hd[data-h=s] { left: 50%; top: 100%; }
+.sel .hd[data-h=sw] { left: 0; top: 100%; } .sel .hd[data-h=w] { left: 0; top: 50%; }
+.sel .size { position: absolute; left: 0; top: -28px; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.hint { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 16px 24px; border-radius: 18px; background: color-mix(in srgb, var(--bg) 90%, transparent); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.6; text-align: center; pointer-events: none; }
+.hint .sub { font-size: 13px; font-weight: 400; opacity: 0.75; }
+.tools { position: fixed; display: flex; gap: 6px; align-items: center; padding: 5px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 92%, transparent); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); color: #fff; cursor: default; white-space: nowrap; }
+
+/* ---------- 录制框右上角外面的小胶囊（作者选）：右边和录制框对齐，按内容往左长 ---------- */
+body.cap { height: 100vh; }
+.capbox { position: absolute; left: 2px; right: 2px; top: 2px; bottom: 2px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 92%, transparent); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); color: #fff; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 12px; white-space: nowrap; overflow: hidden; font-size: 12px; }
+.capbox button { padding: 0 11px; height: 22px; font-size: 12px; } /* 间隔、两边留白别改：胶囊的宽度是 recbar.js 按「子元素 + 间隔 8 + 留白」算的 */
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #8a8f98; flex: none; }
+.dot.rec { background: var(--bad); animation: recPulse 1.2s ease-in-out infinite; }
+.dot.armed { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+@keyframes recPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 60%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
+.time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; }
+.time.near { color: #ff9a93; }
+.info { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #e4e6ea; } /* 宽度由主进程按内容调，省略号只是兜底 */
+.info .warn { color: #ffd08a; }
+.info .dim { opacity: 0.7; }
+.info b { color: var(--cyan); }
+.info b.ready { color: #fff; }
+.auto { display: flex; align-items: center; gap: 4px; color: #d8dbe0; font-size: 12px; cursor: pointer; }
+.auto input { accent-color: var(--accent); margin: 0; }
+kbd { font: inherit; font-size: 11.5px; padding: 0 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.14); line-height: 18px; display: inline-block; }
+.stopBtn { width: 22px; height: 22px; padding: 0 !important; border-radius: 50% !important; background: var(--bad); display: flex; align-items: center; justify-content: center; }
+.stopBtn:hover { background: color-mix(in srgb, var(--bad) 85%, white); }
+.stopBtn i { width: 8px; height: 8px; background: #fff; border-radius: 2px; }
+
+/* ---------- 录制框（作者定：四边一体黑框 + 底边 4px 黑框 + 2px 浅青色进度）：窗口比区域左右上各大 3 像素、下面大 5 像素，框画在区域外面；
+   外面一圈 1 像素淡白描边，深色画面上也看得见 ---------- */
+body.frame { width: 100vw; height: 100vh; }
+.fbox { position: fixed; left: 1px; top: 1px; right: 1px; bottom: 5px; border: 2px solid #000; border-bottom: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4); }
+.fbar { position: fixed; left: 1px; right: 1px; bottom: 1px; height: 4px; background: #000; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4); }
+.ffill { position: absolute; left: 0; top: 1px; height: 2px; width: 0; background: #7fe9f2; }
+.fbar .cut { position: absolute; top: -6px; height: 10px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 2px rgba(0, 0, 0, 0.7); }
+.fbar .cut.new { animation: cutIn 0.3s ease-out; }
+@keyframes cutIn { from { transform: scaleY(0.2); opacity: 0.2; } to { transform: scaleY(1); opacity: 1; } }
+.fhead { position: absolute; top: -9px; height: 13px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px #7fe9f2, 0 0 2px rgba(0, 0, 0, 0.7); }
+.fhead.near { background: #ff3b30; box-shadow: 0 0 8px #ff3b30, 0 0 2px rgba(0, 0, 0, 0.7); }
+.fhead.pop { animation: pop 0.25s ease-out; }
+/* 开录前：四个角的小方块，提示框能拖着改大小（作者：「确认选框后，是不能拖动边框改变了吗」）；开录后不显示 */
+.fcorner { position: fixed; width: 8px; height: 8px; background: #fff; border: 2px solid #000; display: none; }
+body.armed .fcorner { display: block; }
+.fcorner.nw { left: 0; top: 0; } .fcorner.ne { right: 0; top: 0; } .fcorner.sw { left: 0; bottom: 0; } .fcorner.se { right: 0; bottom: 0; }
+@keyframes pop { 0% { transform: translateY(0); } 40% { transform: translateY(-5px) scaleY(1.15); } 100% { transform: translateY(0); } }
+/* 胶囊左头的把手、拖着挪框（10-22 试用反馈，作者选「B 拖控制条带着框走」）：按钮和勾选框照旧是点 */
+.capbox.movable { cursor: grab; }
+.capbox.movable:active { cursor: grabbing; }
+.capbox.movable button, .capbox.movable label { cursor: default; }
+.grip { display: grid; grid-template-columns: repeat(2, 3px); gap: 3px; flex: none; margin-left: -2px; }
+.grip i { width: 3px; height: 3px; border-radius: 50%; background: #cfd6da; }
+
+/* 11.13 录制帧率（作者选示意图 A）：一排五档，点哪个亮哪个；亮的那块用胶囊里按钮的浅底 */
+.fpsBox { display: flex; align-items: center; gap: 5px; color: #d8dbe0; font-size: 12px; }
+.fpsBox .flab { opacity: 0.8; }
+.fseg { display: flex; padding: 2px; gap: 1px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+.capbox .fseg button { height: 18px; padding: 0 7px; font-size: 11.5px; font-weight: 500; background: transparent; color: #c9ccd2; }
+.capbox .fseg button:hover { background: rgba(255, 255, 255, 0.1); }
+.capbox .fseg button.on { background: rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600; }

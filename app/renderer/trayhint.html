@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- Windows 托盘提示小窗（Windows版 W11e，作者：提示条做成聊天软件拖文件时的那种小提示窗）：
+     文件一拖到托盘的 GGIF 图标上，图标正上方先冒这个小窗；停一下面板弹出、嘴张开，它就收起。在它上面松手也能压。main.js showTrayHint 开它 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self'; script-src 'self'">
+<link rel="stylesheet" href="trayhint.css">
+</head>
+<body>
+<div id="hint"><img src="../assets/icon-64.png" alt=""><span>文件拖到这，松手就压</span></div>
+<script src="trayhint.js"></script>
+</body>
+</html>

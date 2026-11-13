@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; media-src 'self' file:; style-src 'self'; script-src 'self'">
+<title>GGIF</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 10-22 界面重做（参考应用宝，作者选了 Claude 版原型：GIF工具/界面与打包/重设计/我的版/原型.html）。所有 id 和原来一样，交互代码不变。
+     隐藏标题栏：系统的红黄绿叠在左上，标题行整条可以拖动窗口（按钮除外）。 -->
+<header>
+  <div class="logo"><svg class="logoMark" viewBox="0 0 24 24" aria-hidden="true"><rect class="lm-frame" x="1.2" y="1.2" width="21.6" height="21.6" rx="6"/><rect class="lm-bar" x="6" y="15.4" width="12" height="2.6" rx="1.3"/></svg><h1>GGIF</h1></div>
+  <span id="missing" class="warn hidden"></span>
+  <!-- 体积条：说明 + 小字 + 大数字，紧挨「导出」（作者定）；悬停落下完整说明，点一下钉住 -->
+  <div id="hdrSingle" class="hdrRight">
+    <div id="sizeBox" class="sizeBar idle">
+      <button id="sizeStatus" class="sizeStatus">
+        <i class="sico" aria-hidden="true"></i>
+        <span id="sizeVerdict">拖入或导入一个 GIF / 视频</span>
+        <span id="progress" class="progress hidden"><span class="spin"></span><span id="progressText"></span><span id="elapsed"></span></span>
+      </button>
+      <span id="sizeLabel" class="sizeLabel"></span><span id="sizeBig" class="sizeBig">—</span>
+      <div id="sizePanel" class="sizePanel hidden">
+        <div class="spHead"><b id="spTitle">说明</b><button id="spClose" class="ibtn xs" title="收起"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg></button></div>
+        <div id="spVerdict" class="spVerdict"></div>
+        <div id="sizeMore"><div id="sizeRange" class="muted"></div><div id="tierLine" class="muted"></div><div id="colorLine" class="muted"></div></div>
+        <div id="result" class="hidden"></div>
+      </div>
+    </div>
+    <button id="export" class="primary hexport" disabled>导出</button>
+    <button id="cancel" class="hexport cancel hidden">取消</button>
+    <div class="actions">
+      <button id="recBtn" class="ibtn rec" data-tip="录屏：选屏幕或窗口，框出来后拖边角改大小；⌃⌥R 开始 / 停止，开了「打标」时录的时候 ⌥空格 切一刀；也可以双击菜单栏图标"><svg viewBox="0 0 20 20"><circle class="core" cx="10" cy="10" r="5.2"/><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <button id="importBtn" class="ibtn" data-tip="导入：选一个 GIF 或视频（也可以直接拖进来）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5"/><path d="M3.5 12.5v2.2a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-2.2"/></svg></button>
+      <button id="clearBtn" class="ibtn" data-tip="移除：清空编辑区，回到空白（不删除任何文件）" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg></button>
+      <button id="helpBtn" class="ibtn helpBtn tip-left" data-tip="设置和帮助"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3.5 6.5h13M3.5 13.5h13"/><circle cx="7.5" cy="6.5" r="2.2" fill="currentColor"/><circle cx="12.5" cy="13.5" r="2.2" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main id="singleView">
+  <section id="left">
+    <div id="drop" class="drop">
+      <!-- 预览上下的留白：画面自己的虚化（沉浸），缩略图出来以后换上 -->
+      <div id="amb" class="amb" aria-hidden="true"></div>
+      <div id="dropHint">
+        <div class="dropIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11m0 0-4.2-4.2M12 14.5l4.2-4.2"/><path d="M4 15v2.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V15"/></svg></div>
+        <p class="big">把视频或 GIF 拖到这里</p>
+        <p class="muted">拖一个进来精修 · 拖多个或整个文件夹，交给菜单栏批量压</p>
+        <button id="pick" class="pill primary">选择文件…</button>
+        <p class="dropKeys"><span class="kc" data-hk="rec">⌃⌥R</span> 录屏 <span class="kc">⌘V</span> 在菜单栏面板里粘贴</p>
+      </div>
+      <!-- 预览框能拖走（10-22 试用反馈 9.6d，作者选「A 跟着选中的用途」）：拖出去的是右边选中那档最近导出的 GIF -->
+      <video id="video" class="hidden" muted playsinline draggable="true"></video>
+      <img id="gifPreview" class="hidden" alt="" draggable="true">
+      <div id="dragHint" class="dragHint hidden"></div>
+      <div id="cropBox" class="cropBox hidden"><span id="cropSize" class="cropSize"></span><i data-c="nw"></i><i data-c="ne"></i><i data-c="sw"></i><i data-c="se"></i></div>
+      <div id="playHint" class="playHint hidden"></div>
+      <!-- 文件信息平时收着，悬停画面从底下浮出 -->
+      <div class="scrim" aria-hidden="true"></div>
+      <div id="fileName" class="fileInfo"></div>
+      <!-- 提示条做成画面左上的胶囊：拖进多个交给菜单栏、从菜单栏打开某一行时的说明 -->
+      <div class="notes">
+        <div id="handoff" class="handoff hidden"><i class="ndot" aria-hidden="true"></i><span id="handoffText"></span><span class="grow"></span><button id="handoffOpen" class="pill sm">打开文件夹</button><button id="handoffClose" class="pill sm ghost" title="收起这条提示">知道了</button></div>
+        <div id="editNote" class="editNote hidden"></div>
+      </div>
+    </div>
+    <!-- 打标条和时间轴是同一条（10-19 深夜，作者选 A）：收起是框外细条，样子和录制框底边一样（深色细带里跑 2px 浅青、白切点；10-21 作者要和录屏一样）；
+         点右边箭头长成缩略图时间轴（把手、精确起止） -->
+    <div id="trim" class="trim hidden collapsed noanim">
+      <div class="tlRow">
+        <div id="strip" class="strip">
+          <div class="stripIn"><div id="thumbs" class="thumbs"></div><div id="tlFill" class="tlFill"></div><div id="shadeL" class="shade left"></div><div id="shadeR" class="shade right"></div></div>
+          <div id="marks" class="marks"></div>
+          <div id="playhead" class="playhead"></div>
+          <div id="handleL" class="handle"></div><div id="handleR" class="handle"></div>
+        </div>
+        <span id="markHint" class="markHint"></span>
+        <button id="tlOpen" class="ibtn sm tlOpen tip-up tip-left" data-tip="展开时间轴：拖两头剪头尾、输入精确起止"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg></button>
+      </div>
+      <div id="trimRow" class="trimRow">
+        <b id="segLabel" class="segLabel"></b>
+        <label class="field">开始 <input id="startNum" type="number" step="0.01" min="0"> 秒</label>
+        <label class="field">结束 <input id="endNum" type="number" step="0.01" min="0"> 秒</label>
+        <span id="durLine" class="muted"></span>
+        <span class="grow"></span>
+        <button id="trimReset" class="pill sm ghost" title="恢复整段">还原整段</button>
+        <button id="tlClose" class="ibtn sm tip-up tip-left" data-tip="收起成打标条（下次打开也是收起的）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12l4.5-4.5 4.5 4.5"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="right">
+    <!-- 只有「一键 / 自定义」两种（作者）；用途是一键里面的内容 -->
+    <div id="modeTabs" class="seg modeTabs"><button data-mode="auto" class="on">一键</button><button data-mode="custom">自定义</button></div>
+
+    <div id="autoPane" class="autoPane">
+      <div class="card">
+        <div class="cardHead"><b>用途</b><span>发到公众号的方式</span></div>
+        <div id="presets" class="tiles"></div>
+      </div>
+      <div class="card hintCard">
+        <div class="cardHead"><b>压缩</b><span>默认极速</span></div>
+        <div id="speeds" class="speeds"></div>
+        <div id="speedHint" class="chint"></div>
+      </div>
+    </div>
+
+    <!-- 自定义：参数收成四组，平时一行摘要；点开一组、其他的收起。用一键结果预填，改了就按当前参数真编一次看体积 -->
+    <div id="customPane" class="customPane hidden">
+      <div class="card limits"><b>体积上限</b><div id="c_presets" class="seg mini"></div></div>
+      <div class="grp open" data-g="view">
+        <button class="grpHead"><b>画面</b><span id="g_view" class="sum"></span><svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg></button>
+        <div class="grpBody"><div><div class="grpIn">
+          <div class="prow"><span class="plab">输出宽度</span><div class="pctl"><input id="c_width" type="number" min="100" max="1080" step="2" class="n4"><span id="c_height" class="muted"></span></div></div>
+          <div class="prow"><span class="plab">帧率</span><div class="pctl"><input id="c_fps" type="number" min="1" max="50" step="1" class="n3"><span class="muted">帧 / 秒</span><span id="c_frames" class="muted"></span></div></div>
+          <div class="prow"><span class="plab">裁画面</span><div class="pctl"><button id="c_crop" class="mini">框选</button><button id="c_cropClear" class="mini hidden">清除</button><label class="chk" title="锁住时拖框保持原片比例"><input type="checkbox" id="c_ratio" checked>锁比例</label><span id="c_cropState" class="muted"></span></div></div>
+        </div></div></div>
+      </div>
+      <div class="grp" data-g="enc">
+        <button class="grpHead"><b>编码</b><span id="g_enc" class="sum"></span><svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg></button>
+        <div class="grpBody"><div><div class="grpIn">
+          <div class="prow"><span class="plab">编码器</span><div class="pctl"><select id="c_encoder"><option value="lessgif">lessgif（画质好）</option><option value="ffmpeg">ffmpeg + gifsicle（快）</option><option value="gifski">gifski</option></select></div></div>
+          <div class="prow"><span class="plab" title="编码器的画质旋钮：越高越清楚、文件越大。不是分辨率（分辨率是上面的输出宽度）">编码画质</span><div class="pctl"><label class="chk" title="自动：在体积上限内取最高画质"><input type="checkbox" id="c_qAuto">自动</label><input id="c_qRange" type="range" min="0" max="100" step="1"><input id="c_q" type="number" min="0" max="100" class="n3"></div></div>
+          <div class="prow two"><span class="plab">颜色数</span><div class="pctl"><input id="c_colors" type="number" min="16" max="256" step="1" class="n3"></div><span class="plab">抖动</span><div class="pctl"><input id="c_dither" type="number" min="0" max="1" step="0.05" class="n3"></div></div>
+          <div class="prow"><span class="plab">额外有损</span><div class="pctl"><input id="c_lossyRange" type="range" min="0" max="200" step="5"><input id="c_lossy" type="number" min="0" max="200" step="1" class="n3"></div></div>
+        </div></div></div>
+      </div>
+      <div class="grp" data-g="play">
+        <button class="grpHead"><b>播放</b><span id="g_play" class="sum"></span><svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg></button>
+        <div class="grpBody"><div><div class="grpIn">
+          <div class="prow two"><span class="plab">速度</span><div class="pctl"><input id="c_speed" type="number" min="0.5" max="2" step="0.05" class="n3"><span class="muted">×</span></div><span class="plab">末帧停留</span><div class="pctl"><input id="c_hold" type="number" min="0" max="10" step="0.5" class="n3"><span class="muted">秒</span></div></div>
+          <div class="prow"><span class="plab">循环</span><div class="pctl"><select id="c_loopMode"><option value="0">无限循环</option><option value="n">放几遍就停</option></select><input id="c_loop" type="number" min="1" max="100" step="1" class="n3 hidden"><span id="c_loopUnit" class="muted hidden">遍</span></div></div>
+        </div></div></div>
+      </div>
+      <div class="grp" data-g="etc">
+        <button class="grpHead"><b>其他</b><span id="g_etc" class="sum"></span><svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg></button>
+        <div class="grpBody"><div><div class="grpIn">
+          <div class="prow"><span class="plab">饱和度</span><div class="pctl"><input id="c_satRange" type="range" min="0.5" max="1.5" step="0.05"><input id="c_sat" type="number" min="0.5" max="1.5" step="0.05" class="n3"></div></div>
+          <div class="prow two"><span class="plab">色彩</span><div class="pctl"><select id="c_color"><option value="auto">自动</option><option value="none">不转</option><option value="p3">按 P3 转</option></select></div><span class="plab">凑帧</span><div class="pctl"><label class="chk"><input type="checkbox" id="c_fill">凑到 61 帧</label></div></div>
+        </div></div></div>
+      </div>
+      <div id="c_hint" class="muted small"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 设置和帮助（10-22 设置卷，作者选「设置｜帮助」分两页）：id 还叫 help（调试开关、测试桩都按它找） -->
+<div id="help" class="overlay hidden">
+  <div class="panel setPanel">
+    <div class="panelHead"><div id="setTabs" class="tabs"><button data-tab="set" class="on">设置</button><button data-tab="help">帮助</button></div><div id="clHead" class="clHead hidden"><button id="clBack" class="pill sm ghost">← 设置</button><b>更新日志</b></div><button id="helpClose" class="pill sm ghost">关闭</button></div>
+    <!-- 设置页（10-22 设置卷，第一批 + 第二批）：每项的说明挂在名字上，停 0.35 秒浮出 -->
+    <div id="setBody" class="setBody">
+      <section class="hcard sCard tall"><h3>通用</h3>
+        <div class="sRow"><div class="sName" data-tip="登录 Mac 后自动打开 GGIF（只在菜单栏，不弹窗口）"><b>开机启动<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_login"><i></i></label></div></div>
+        <div class="sRow"><div class="sName" data-tip="关着：打开 GGIF 只在菜单栏出现图标；点「完整界面」「编辑」或再点一下程序图标才开。开机自启那次开着也不弹"><b>启动时打开完整界面<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_openMain"><i></i></label></div></div>
+        <div class="sRow"><div class="sName" data-tip="菜单栏拖入、双击、批量压完时发系统通知；没压成、出错的照样通知"><b>压完了发通知<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_notifyDone"><i></i></label></div></div>
+        <div class="sRow winOnly"><div class="sName" data-tip="后备用，默认关：平时把文件拖到托盘的 GGIF 图标上就会弹面板。拖到托盘不灵时可以打开它——贴在屏幕右边的小块，拖上去就压；平时只露一小截、半透明，按住能上下挪，点一下开面板；全屏的程序在前台时自动藏起来"><b>屏幕边的投放块<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_dropBlock"><i></i></label></div></div>
+        <p id="st_loginNote" class="sNote hidden"></p>
+      </section>
+      <section class="hcard sCard"><h3>压缩</h3>
+        <div class="sRow"><div class="sName" data-tip="不到 61 帧补透明小帧，避免公众号缩成 640 宽；一键、菜单栏、双击都按它，主界面「自定义」里还能单次改"><b>凑到 61 帧<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_fill"><i></i></label></div></div>
+        <div class="sRow"><div class="sName" data-tip="压好的 GIF 放原文件旁边，或者统一放进一个文件夹：菜单栏拖入、双击、粘贴、批量、主界面导出、录屏的段都放进去，已经合规的也复制一份过去"><b>结果放哪<i class="info">i</i></b></div><div class="sCtl"><div class="sSeg"><button id="st_outSrc">原文件旁边</button><button id="st_outDir" class="tip-left" data-tip="选一个文件夹，结果都放进去"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3l1.5 1.5h6.5A1.5 1.5 0 0 1 17 8v6.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"/></svg><span id="st_outDirName">指定文件夹…</span></button></div></div></div>
+      </section>
+      <section class="hcard sCard"><h3>记住</h3>
+        <div class="sRow"><div class="sName" data-tip="关着：每次打开主界面都是 9.9MB、极速；从菜单栏「编辑」进来照旧用那一行的；菜单栏的档位一直记着"><b>主界面的档位和速度<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_rememberPreset"><i></i></label></div></div>
+        <div class="sRow"><div class="sName" data-tip="关着：每次打开都是收起的样子（只有打标细条）"><b>时间轴展开 / 收起<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_rememberTimeline"><i></i></label></div></div>
+      </section>
+      <section class="hcard sCard"><h3>录屏</h3>
+        <div class="sRow"><div class="sName tip-up" data-tip="在哪个程序里都能按：按一下出录制框（用上次的框），再按一下开录，录的时候按就停"><b>开始 / 停止录屏<i class="info">i</i></b></div><div class="sCtl"><button id="hk_rec" class="hkKey tip-up tip-left" data-tip="点一下，再按下新的组合（Esc 取消）；要带 ⌃、⌥、⌘ 中的一个，两个快捷键不能一样"></button><button id="hk_recReset" class="pill sm ghost">恢复默认</button></div></div>
+        <div class="sRow"><div class="sName tip-up" data-tip="开了录屏打标时，录制中占用（只在录制中）；主界面打标也用它"><b>切一刀<i class="info">i</i></b></div><div class="sCtl"><button id="hk_mark" class="hkKey tip-up tip-left" data-tip="点一下，再按下新的组合（Esc 取消）；要带 ⌃、⌥、⌘ 中的一个，两个快捷键不能一样"></button><button id="hk_markReset" class="pill sm ghost">恢复默认</button></div></div>
+        <div class="sRow"><div class="sName tip-up" data-tip="开着：录的时候按 ⌥空格 切段，一刀没切就整段一份；关着：不占 ⌥空格，整段录成一份，录完在主界面挑一段压。和录屏小胶囊、菜单栏顶上的是同一个"><b>录屏打标<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_recMark"><i></i></label></div></div>
+        <div class="sRow"><div class="sName tip-up" data-tip="停录后把这次的各段按菜单栏当前档位压缩；超过 37.5 秒的段压不进，留着等你挑；和录屏小胶囊上的是同一个"><b>录完自动压<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_recAuto"><i></i></label></div></div>
+        <div class="sRow"><div class="sName tip-up" data-tip="录制帧率：高保真＝录 60 帧，导出时自动选帧率（和以前一样）；选数字＝按这个帧率录、导出也锁在这个帧率，录的时候更省电、录像更小。一张 GIF 最多 300 帧：30 帧最长 10 秒（长了会自动变窄，10 秒约 600 宽）、15 帧 20 秒、10 帧 30 秒、5 帧 60 秒。记住上次选的；和录屏小胶囊上的是同一个"><b>录制帧率<i class="info">i</i></b></div><div class="sCtl"><div id="st_recFps" class="seg fps5"><button data-f="60">高保真</button><button data-f="30">30</button><button data-f="15">15</button><button data-f="10">10</button><button data-f="5">5</button></div></div></div>
+        <!-- 录像放在（10-22 试用反馈 9.6b，作者选「就按这版做」）：文件夹名点了换一个，悬停出完整路径 -->
+        <div class="sRow"><div class="sName tip-up" data-tip="每次录屏在这里建一个「开录时刻」文件夹，放整段录像；结果放「原文件旁边」时，压好的 GIF 也在这里。工具不自动删"><b>录像放在<i class="info">i</i></b></div><div class="sCtl"><button id="st_recDir" class="pill sm ghost dirBtn tip-up tip-left" data-tip=""><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3l1.5 1.5h6.5A1.5 1.5 0 0 1 17 8v6.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"/></svg><span id="st_recDirName">GGIF录屏</span></button><button id="st_recDirOpen" class="pill sm ghost">打开</button></div></div>
+        <p id="hkErr" class="hkErr hidden"></p>
+      </section>
+      <section class="hcard sCard"><h3>关于</h3>
+        <div class="about"><svg class="logoMark" viewBox="0 0 24 24" aria-hidden="true"><rect class="lm-frame" x="1.2" y="1.2" width="21.6" height="21.6" rx="6"/><rect class="lm-bar" x="6" y="15.4" width="12" height="2.6" rx="1.3"/></svg><b>GGIF</b><span id="st_version"></span><div class="aboutBtn"><button id="st_changelog" class="pill sm ghost">更新日志</button></div></div>
+        <div class="sRow"><div class="sName tip-up" data-tip="测试期间记下操作和结果（不记文件名、路径、剪贴板内容），一天一个文件、留 7 天；出问题时 Claude 在本机读"><b>操作日志（脱敏）<i class="info">i</i></b></div><div class="sCtl"><label class="toggle"><input type="checkbox" id="st_log"><i></i></label><button id="st_logOpen" class="pill sm ghost">打开</button></div></div>
+      </section>
+    </div>
+    <!-- 更新日志（第二批，作者选「A 面板里一页」）：关于里点「更新日志」，左上「← 设置」返回 -->
+    <div id="clView" class="clView hidden"></div>
+    <!-- 帮助页：两列小卡，平时只露标题，点开的那张变整行（作者选乙）；文字一字不删 -->
+    <div id="helpBody" class="helpBody helpFold hidden">
+      <section class="hcard"><h3>用途</h3><div id="helpPresets"></div></section>
+      <section class="hcard"><h3>一键</h3>
+        <ul>
+          <li><b>极速</b>（默认）：日常录屏一般 10 秒内导完。难压的素材（比如动漫、游戏演出）会自动换成高画质编码，约 20–30 秒。</li>
+          <li><b>标准</b>：多试几次、每次都检查画质，比极速慢一点，有时能多保一点宽度或帧率。</li>
+          <li><b>极限</b>：多种编码方式逐一比较，最慢（可能要几分钟），画质最好。</li>
+        </ul>
+      </section>
+      <section class="hcard wide"><h3>自定义</h3>
+        <ul>
+          <li>点「自定义」就把全部参数摊开（分四组：画面、编码、播放、其他，点一组展开），并用一键算出来的结果预填（比如宽 900、每秒 10 帧、lessgif 画质 64），在这些数字上改。</li>
+          <li>每改一项，停一下就按当前参数<b>真编一次</b>，体积框显示真实体积和用了几秒；导出时直接用这次的结果，不再重编。</li>
+          <li><b>输出宽度</b>：高度按比例自动算。<b>裁画面</b>：点「框选」在预览上拖框，<b>右键或回车锁定</b>后才生效（框变实线、标「已裁切」）；再右键或回车解锁可以改，Esc 放弃这次改动，「清除」取消裁切。「锁比例」打开时拖框保持原片比例。</li>
+          <li><b>编码画质</b>：编码器的画质旋钮，越高越清楚、文件越大，不是分辨率。勾「自动」就在体积上限内取最高。lessgif 就是它的画质值，gifski 是它的质量，ffmpeg + gifsicle 换算成有损 =（100 − 画质）× 2。</li>
+          <li><b>颜色数</b>：越少越小、越容易出色带；lessgif 最多 255 色，gifski 编完用 gifsicle 减色。<b>抖动</b>：0 不抖（色带明显、体积小），1 最强（颗粒多）；gifski 不支持。<b>额外有损</b>：编完再用 gifsicle 压一道（0–200）。</li>
+          <li><b>速度</b>：改每帧停留的时间，帧数不变（GIF 一帧最短 2/100 秒）。<b>末帧停留</b>：最后一帧多停几秒。<b>循环</b>：默认无限；放几遍就停按通行写法写，浏览器和公众号里实际放几遍还没实测。</li>
+          <li><b>色彩</b>：Mac 录屏多是 Display P3 广色域，自动转成 sRGB 颜色才准。<b>凑帧</b>：不到 61 帧补透明小帧，避免公众号缩成 640 宽。</li>
+        </ul>
+      </section>
+      <section class="hcard"><h3>体积条（标题行）</h3>
+        <ul>
+          <li>左边是说明，右边紧挨「导出」的是体积数字；鼠标移上去落下完整说明和详情，点一下钉住，点别处收起。</li>
+          <li>导出成功不弹东西，这一行写一句「已导出 …，在菜单栏列表里」，移上去能看宽度、帧率和文件在哪；文件在菜单栏列表里，右键能「在访达中显示」。没做成或取消了，才自动展开说明原因。</li>
+          <li>右上角的圆形按钮：录屏、导入（等于选文件，选多个或选文件夹就交给菜单栏批量压）、移除（只是清空编辑区回到空白，不删除任何文件）、设置和帮助；鼠标移上去会写名字。</li>
+          <li>绿色：能直接装下。黄色：比上限大，导出时自动压。红色：大很多，会自动降宽度或帧率；想保住画质可以剪短。</li>
+          <li>视频的预估是按「最高画质」算的，导出时会自动压到上限以内，以导出后的结果为准。</li>
+        </ul>
+      </section>
+      <section class="hcard"><h3>公众号的规矩（工具已自动处理）</h3>
+        <ul>
+          <li>不到 61 帧的动图会被公众号缩到 640 宽重新压缩。工具会补透明小帧凑到 61 帧，画面不变（设置里「凑到 61 帧」能关）。</li>
+          <li>最多 300 帧；宽度超过 1080 会被公众号缩小。</li>
+        </ul>
+      </section>
+      <section class="hcard"><h3>GIF 文件</h3>
+        <ul>
+          <li>已经合规的原样复制；只是帧数不够的只凑帧；超过上限的自动重压缩，宽度优先，帧率可能降到每秒 10 帧。</li>
+        </ul>
+      </section>
+      <section class="hcard wide"><h3>打标（切一刀）和时间轴</h3>
+        <ul>
+          <li>预览下面那条细条是打标条（和录屏时录制框的底边一个样子）：按 <b data-hk="mark">⌥空格</b> 在播放到的地方切一刀，切 N 刀分成 N+1 段，导出时每段一张 GIF（名字带「_第N段」）。动图、视频都能切；播放、暂停时都能切。</li>
+          <li>切错了：<b>右键</b>点那根切点删掉这一刀（和前一段合成一段），或按 <b>⌘Z</b> 撤销最后一次切 / 删。</li>
+          <li>段号标红的段太长（每秒 10 帧最多 300 帧，约 30 秒），可能导不出来：在那段里再按 <span data-hk="mark">⌥空格</span>切，或者选中它剪短。</li>
+          <li>点<b>段号</b>（或双击这一段）只看这一段：预览只循环它，标题行的体积只算它，「导出」只导它；再点一次或按 Esc 取消。没选中时「导出」把还没导过的段各导一张。</li>
+          <li>点细条右边的箭头展开完整时间轴：拖两头的把手剪头尾（选中了某段就是剪这一段，可以伸到相邻段里，不影响别的段），或者直接输入起止秒数（精确到 0.01 秒）；导出时按原片真实的帧切。向上的箭头收回细条。展开还是收起会记住，下次打开还是这样（设置里「记住」能关）。</li>
+          <li>预览循环播放选段；点画面或按空格暂停 / 接着放。点或拖时间轴、拖把手时会先暂停、停在那一帧，方便看准；再点画面就从那里放。文件名、尺寸、时长：鼠标移到画面上就浮出来。</li>
+          <li>同一个文件在这次运行里重新打开，切过的刀还在；录屏的段从菜单栏打开时，条上是这次录屏的全部段，在这里改的会同步回菜单栏那几行。</li>
+        </ul>
+      </section>
+      <section class="hcard"><h3>批量</h3>
+        <ul>
+          <li>拖多个文件或整个文件夹进来（文件夹只看第一层），会交给菜单栏的图片列表一个个压，按这里选的用途、用极速；进度和结果看菜单栏，正在精修的这张不受影响。也可以直接拖到菜单栏图标上。</li>
+          <li>文件夹里之前压好的结果也照常处理：已经合规的直接用、不重新压也不另存一份；超标的再压一份（名字不会叠成「_压缩_压缩」）。列表里已有的结果再拖进来，会高亮原来那一行。全部压完会给一行汇总。</li>
+        </ul>
+      </section>
+      <section class="hcard"><h3>文件放哪</h3>
+        <ul>
+          <li>导出的 GIF 放在原文件旁边：9.9MB 档叫「原文件名_压缩.gif」，4.8MB 档叫「原文件名_压缩_4.8M.gif」；重名自动加编号。原文件不会被改动（设置里「结果放哪」能改成统一放进一个文件夹）。</li>
+          <li>录屏的录像放在「下载/GGIF录屏/开录时刻/」（设置里「录像放在」能换）；工具不自动删，要清就在菜单栏右键那一段「把这次录屏的整段录像移到废纸篓」。</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="marks.cjs"></script>
+<script src="hotkeys.cjs"></script>
+<script src="changelog.cjs"></script>
+<script src="app.js"></script>
+</body>
+</html>

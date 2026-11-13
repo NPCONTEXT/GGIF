@@ -1,0 +1,6 @@
+/* Windows 托盘提示小窗（W11e）：像聊天软件的「文件拖到这…」，用 GGIF 自己的深色。窗口本身透明，236×44 */
+html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; -webkit-user-select: none; font: 13px/1.4 -apple-system, "Microsoft YaHei UI", "Microsoft YaHei", sans-serif; }
+#hint { position: fixed; inset: 2px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; padding: 0 12px; border-radius: 10px; background: #272632; border: 1px solid rgba(255, 255, 255, 0.14); color: #ececf1; }
+#hint img { width: 22px; height: 22px; border-radius: 5px; flex: none; pointer-events: none; }
+#hint span { white-space: nowrap; pointer-events: none; }
+#hint.hot { border-color: #5ad8e6; background: #20323a; }

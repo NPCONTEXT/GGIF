@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+<title>选录屏区域</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="rec.css">
+</head>
+<body class="region">
+<!-- 拖出要录的一块（作者批的录屏方案）：框外拖是重画，框里拖是挪位置，拖四边、四角改大小（作者：「只能重新划区域改变大小，不能拖动边框改变」）；回车确定，Esc 取消；不拖直接回车 = 整个屏幕 -->
+<div id="shade" class="shade"></div>
+<div id="sel" class="sel hidden"><span id="size" class="size"></span><i class="hd" data-h="nw"></i><i class="hd" data-h="n"></i><i class="hd" data-h="ne"></i><i class="hd" data-h="e"></i><i class="hd" data-h="se"></i><i class="hd" data-h="s"></i><i class="hd" data-h="sw"></i><i class="hd" data-h="w"></i></div>
+<div id="hint" class="hint">拖出要录的区域<br><span class="sub">回车确定 · Esc 取消 · 不拖直接回车就录整块屏幕</span></div>
+<div id="tools" class="tools hidden">
+  <button id="ok" class="primary">确定（回车）</button>
+  <button id="full">整个屏幕</button>
+  <button id="repick">换屏幕或窗口</button>
+  <button id="cancel">取消（Esc）</button>
+</div>
+<script src="region.js"></script>
+</body>
+</html>

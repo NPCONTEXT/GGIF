@@ -1,0 +1,13 @@
+{
+  "name": "gifkit-engine",
+  "version": "0.3.3",
+  "description": "GIF 工具的核心引擎和命令行：读入视频 / GIF，按体积上限和画质最低线选档，lessgif 编码，凑帧，合规检查，批量。",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": { "gifkit": "src/cli.js" },
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test 'test/*.test.js'"
+  }
+}

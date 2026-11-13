@@ -1,0 +1,144 @@
+/* 菜单栏面板和双击小条（10-22 重做，参考应用宝；原型 GIF工具/界面与打包/重设计/我的版/原型.html）。颜色、圆角、动效在 theme.css。 */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; font: 13px/1.45 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--t1); background: var(--bg2); display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; cursor: default; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.grow { flex: 1; }
+.hidden { display: none !important; }
+.muted { color: var(--t3); font-size: 12px; }
+
+/* ---------- 顶栏：标题 +「两种都要」开关 + 档位滑块（带蓝绿点） ---------- */
+header { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 12px 0 14px; flex: none; }
+header b { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.logoMark { width: 18px; height: 18px; }
+.mark { margin-right: 2px; }
+.seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 2px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); width: 132px; flex: none; }
+.seg::before { content: ''; position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 2); border-radius: 999px; background: var(--card3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); transition: transform var(--mid) var(--ease); }
+.seg:has(> button:nth-of-type(2).on)::before { transform: translateX(100%); }
+.seg button { position: relative; z-index: 1; height: 26px; padding: 0 6px; border: 0; border-radius: 999px; background: transparent; color: var(--t2); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; transition: color var(--fast); }
+.seg button:hover, .seg button.on { color: var(--t1); }
+
+/* ---------- 投放区「嘴」：平时一条线（两头向下的小三角），拖拽时张开 ---------- */
+.mouth { flex: none; margin: 0 14px; position: relative; }
+.lip { height: 10px; position: relative; margin: 0 6px; }
+.lip::before { content: ''; position: absolute; left: 6px; right: 6px; top: 4px; height: 2px; border-radius: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, var(--cyan) 80%, transparent), color-mix(in srgb, var(--accent) 30%, transparent)); }
+.mouth::before, .mouth::after { content: ''; position: absolute; top: 3px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid color-mix(in srgb, var(--cyan) 75%, transparent); transition: transform 0.2s; }
+.mouth::before { left: 6px; }
+.mouth::after { right: 6px; }
+.dropzone { height: 0; overflow: hidden; border: 2px dashed transparent; border-radius: var(--r-l); background: transparent; color: #c9fbff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; opacity: 0;
+  transition: height calc(0.18s * var(--mk)) ease-out, opacity calc(0.18s * var(--mk)), background 0.12s, border-color 0.12s, margin calc(0.18s * var(--mk)); }
+.dropzone b { font-size: 16px; }
+.dropzone span { font-size: 12px; color: var(--t2); }
+body.dragging .lip { display: none; }
+body.dragging .mouth::before, body.dragging .mouth::after { display: none; }
+body.dragging .dropzone { height: 110px; opacity: 1; margin: 4px 0; border-color: color-mix(in srgb, var(--cyan) 55%, transparent); background: color-mix(in srgb, var(--cyan) 7%, transparent); }
+body.dragging.hot .dropzone { background: color-mix(in srgb, var(--cyan) 14%, transparent); border-color: var(--cyan); border-style: solid; }
+
+/* ---------- 提示条、刚录完的条：带底色的卡片 ---------- */
+.toast { display: none; margin: 8px 12px 0; padding: 9px 12px; border-radius: var(--r-m); font-size: 12.5px; line-height: 1.5; flex: none; background: var(--card); border: 1px solid var(--line); }
+.toast.show { display: flex; align-items: center; gap: 10px; animation: slideIn var(--mid) var(--ease); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } }
+.toast.ok { background: linear-gradient(135deg, color-mix(in srgb, var(--ok) 20%, var(--card)), color-mix(in srgb, var(--ok) 8%, var(--card))); border-color: color-mix(in srgb, var(--ok) 30%, transparent); color: #b8f2d6; }
+.toast.err { background: linear-gradient(135deg, color-mix(in srgb, var(--bad) 22%, var(--card)), color-mix(in srgb, var(--bad) 8%, var(--card))); border-color: color-mix(in srgb, var(--bad) 35%, transparent); color: #ffc4bf; }
+.toast button { margin-left: auto; flex: none; height: 24px; padding: 0 11px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; }
+.recSession { display: flex; align-items: center; gap: 6px; margin: 8px 12px 0; padding: 9px 8px 9px 12px; border-radius: var(--r-m); flex: none; font-size: 12.5px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--warn) 20%, var(--card)), color-mix(in srgb, var(--warn) 8%, var(--card))); border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent); }
+.recSession.hidden { display: none; }
+.recText { flex: 1; min-width: 0; line-height: 1.45; display: flex; flex-direction: column; }
+.recText b { color: #ffd08a; }
+.recWhere { font-size: 11.5px; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 列表：一行一张卡片；悬停浮出三个小按钮 ---------- */
+#list { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; padding: 6px 8px 4px; }
+.row { position: relative; display: flex; align-items: center; gap: 11px; padding: 6px 8px; margin-bottom: 2px; border-radius: var(--r-m); border: 1.5px solid transparent; transition: background var(--fast), border-color var(--fast); }
+.row:hover { background: var(--card); }
+/* 选中的行（10-20 多选）：淡蓝底蓝边、缩略图右下一个勾；拉框是半透明蓝框 */
+.row.sel, .row.sel:hover { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.row.sel .thw::after { content: ''; position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg2);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'><path d='M5 9.2l2.6 2.6L13 6.4' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-size: 100%; }
+.marquee { position: fixed; display: none; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 6px; pointer-events: none; z-index: 50; }
+.thw { position: relative; flex: none; display: block; }
+.thumb { width: 42px; height: 42px; border-radius: 11px; background: var(--card2); object-fit: cover; display: block; }
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border: 1px solid transparent; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--t1); white-space: nowrap;
+  transition: transform var(--fast) var(--ease), background var(--fast), box-shadow var(--fast), border-color var(--fast); }
+.chip.done { cursor: grab; }
+.chip.done:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.13); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4); }
+.chip.done:active { cursor: grabbing; }
+.chip.busy { color: var(--t2); }
+.chip.pending { color: #ffd08a; background: color-mix(in srgb, var(--warn) 12%, transparent); cursor: pointer; }
+.chip.pending:hover { background: color-mix(in srgb, var(--warn) 20%, transparent); }
+.chip.over { color: #ff9a93; background: color-mix(in srgb, var(--bad) 12%, transparent); }
+/* 没做成（10-22 试用反馈，作者选「A 只改版本块」）：红边、加粗、带重试的小箭头，点一下重试 */
+.chip.failed { color: #ffc2bd; font-weight: 650; background: color-mix(in srgb, var(--bad) 22%, transparent); border-color: color-mix(in srgb, var(--bad) 70%, transparent); cursor: pointer; }
+.chip.failed:hover { background: color-mix(in srgb, var(--bad) 32%, transparent); }
+.chip.failed .rt { width: 12px; height: 12px; flex: none; }
+.chip.off { color: var(--t3); background: transparent; border: 1px dashed var(--line2); }
+.chip .dots { display: flex; gap: 3px; }
+.chip .spin { width: 11px; height: 11px; border-width: 1.5px; }
+.chip.flash { animation: flash 1.6s ease-out 1; border-color: var(--accent); }
+@keyframes flash { 0%, 40% { background: color-mix(in srgb, var(--accent) 40%, transparent); } 100% { background: rgba(255, 255, 255, 0.07); } }
+/* 悬停一行，右边滑出三个小按钮：快速查看、编辑、在访达中显示（原来的单击版本块、双击行、右键菜单都照旧） */
+.ract { position: absolute; right: 6px; top: 50%; display: flex; gap: 4px; padding: 4px 2px 4px 22px; border-radius: 0 var(--r-m) var(--r-m) 0;
+  background: linear-gradient(90deg, transparent, var(--card) 22px); opacity: 0; transform: translate(6px, -50%); pointer-events: none; transition: opacity var(--fast), transform var(--mid) var(--ease); }
+.row:hover .ract { opacity: 1; transform: translate(0, -50%); pointer-events: auto; } /* 浮在行的右边、不占位置（名字不用让出地方） */
+.row.sel .ract { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 22%, var(--bg2)) 22px); }
+
+.empty { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--t2); padding: 20px; line-height: 1.7; }
+.empty p { margin: 4px 0; }
+.empty.show { display: flex; }
+body.dragging .empty { display: none; }
+.emptyIcon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-bg); color: var(--accent-hi); margin-bottom: 8px; }
+.emptyIcon svg { width: 26px; height: 26px; }
+
+/* ---------- 底栏：常用的在左，清空、退出在右，一道竖线隔开 ---------- */
+footer { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 12px; border-top: 1px solid var(--line); flex: none; }
+footer .ibtn { width: 32px; height: 32px; }
+footer .sep { width: 1px; height: 18px; background: var(--line2); margin: 0 2px; }
+.fhint { color: var(--t3); font-size: 12px; white-space: nowrap; }
+footer #recBtn.recording { background: var(--bad); border-color: var(--bad); color: #fff; animation: recPulse 1.4s ease-in-out infinite; }
+footer #recBtn.recording svg .core { fill: #fff; }
+@keyframes recPulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--bad) 25%, transparent); } }
+footer #recBtn:disabled { opacity: 0.5; }
+footer [data-tip]::after, header [data-tip]::after { white-space: normal; width: max-content; max-width: 250px; }
+
+/* ---------- 双击的小条：只列这次双击的几张，不显示顶栏、投放区、提示条和底栏；窗口高度按内容算（作者） ---------- */
+html.compact, html.compact body { height: auto; overflow: hidden; } /* 高度按内容算，不用滚；透明的悬停提示也占位置，伸出去会撑出滚动条（10-22） */
+body.compact header, body.compact .mouth, body.compact .toast, body.compact .empty, body.compact footer { display: none !important; }
+body.compact #list { flex: none; overflow: visible; padding-top: 8px; }
+.cbar { display: none; align-items: center; gap: 6px; padding: 8px 12px 10px 14px; border-top: 1px solid var(--line); }
+body.compact .cbar { display: flex; }
+/* 缩略图能拖（10-23 试用反馈 9.10）：拖顶上选中那档的结果 */
+.thumb[draggable="true"] { cursor: grab; }
+.thumb[draggable="true"]:active { cursor: grabbing; }
+
+/* ---------- 档位胶囊里的水（11.12，作者：「两种都要的亮块太丑了，可以做成胶囊里面的水那样……选择哪个，水就漫到那边，
+   中间是动态水波纹，两个都亮的话就是充满……越简单越好」，选了版本 1）：水体左右边界跟着亮着的档挪（只亮左 = 左半、只亮右 = 右半、
+   两个都亮 = 满），边界是一条竖着的波浪；切换时波浪晃一下、约 1.6 秒平静，不切换时什么都不动（面板开着也不占显卡）。
+   动的只有水体的左右位置（只在切换那 0.7 秒）和波浪的平移、横向缩放。示意图和预览在 GIF工具/日常更新维护/示意图-打标开关/。 ---------- */
+.seg.water { overflow: hidden; --water: rgba(98, 181, 249, 0.42); } /* 蓝（9.9 档的色）和录制框浅青各一半，半透明，字压在上面也看得清 */
+.seg.water::before { display: none; } /* 不再是一块滑动的灰底 */
+.seg.water button { z-index: 2; transition: color 0.4s; }
+.seg.water button.on { color: #fff; }
+.seg.water button:not(.on) .dot { opacity: 0.4; transition: opacity 0.4s; }
+.seg.water .liquid { position: absolute; inset: 2px; border-radius: 999px; overflow: hidden; pointer-events: none; z-index: 1; }
+.seg.water .body { position: absolute; top: 0; bottom: 0; left: var(--a, 0%); right: var(--b, 50%); background: var(--water); transition: left 0.7s cubic-bezier(0.3, 1.25, 0.45, 1), right 0.7s cubic-bezier(0.3, 1.25, 0.45, 1); }
+.seg.water .body::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 42%; background: linear-gradient(rgba(255, 255, 255, 0.16), transparent); } /* 水面一点反光，静止 */
+/* 波浪边：比胶囊高一个波长、竖着平铺，往下挪一个波长正好接上；水那一侧填色（颜色和 --water 一样，写死在图里） */
+.seg.water .edge { position: absolute; top: -14px; height: calc(100% + 28px); width: 8px; background-repeat: repeat-y; background-size: 8px 14px; transform: translateY(0) scaleX(0.35); }
+.seg.water .edge.r { left: 100%; transform-origin: left center; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='14'%3E%3Cpath d='M0 0H3C6 2.33 6 4.67 3 7C0 9.33 0 11.67 3 14H0Z' fill='rgba(98,181,249,0.42)'/%3E%3C/svg%3E"); }
+.seg.water .edge.l { right: 100%; transform-origin: right center; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='14'%3E%3Cpath d='M8 0H5C2 2.33 2 4.67 5 7C8 9.33 8 11.67 5 14H8Z' fill='rgba(98,181,249,0.42)'/%3E%3C/svg%3E"); }
+.seg.water[data-state="left"] .body { --a: 0%; --b: 50%; }
+.seg.water[data-state="right"] .body { --a: 50%; --b: 0%; }
+.seg.water[data-state="both"] .body { --a: 0%; --b: 0%; }
+.seg.water.stir .edge { animation: waterSettle 1.6s cubic-bezier(0.2, 0.6, 0.3, 1) both; }
+@keyframes waterSettle { from { transform: translateY(0) scaleX(1.25); } to { transform: translateY(28px) scaleX(0.35); } }
+
+/* Windows版（11-08）一期不做录屏：顶上的「打标」开关、底下的录屏按钮、录屏那一行藏掉（Mac 上没有 no-rec 类，不生效） */
+.no-rec header .toggle.mark { display: none; } /* W11a：位置让给「固定」 */
+.pin { margin-right: 2px; }
+.winOnly { display: none !important; }
+.plat-win .toggle.winOnly { display: inline-flex !important; }
+.no-rec #recBtn, .no-rec #recSession { display: none !important; }
